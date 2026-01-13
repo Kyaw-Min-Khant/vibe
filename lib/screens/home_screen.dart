@@ -1,0 +1,166 @@
+import 'package:flutter/material.dart';
+import 'package:messaging_app/services/user_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<Map<String, dynamic>>? usersList;
+  bool isLoading = true;
+  bool addFriendLoading = false;
+  @override
+  void initState() {
+    super.initState();
+    fetchUserListData();
+  }
+
+  void fetchUserListData() async {
+    try {
+      final usersListData = await UserService().getAllUsers();
+      setState(() {
+        usersList = List<Map<String, dynamic>>.from(usersListData);
+        isLoading = false;
+      });
+      debugPrint("All Users: $usersList");
+    } catch (e) {
+      isLoading = false;
+      debugPrint("Error fetching user data: $e");
+    }
+  }
+
+  void handleAddFriend(String friendId) async {
+    try {
+      addFriendLoading = true;
+      final response = await UserService().addFriend(friendId);
+      final usersListData = await UserService().getAllUsers();
+      debugPrint("Add Friend Response: $response");
+      setState(() {
+        usersList = List<Map<String, dynamic>>.from(usersListData);
+        addFriendLoading = false;
+      });
+      Fluttertoast.showToast(
+        msg: response['message'] ?? "Friend Request Sent",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.blue,
+        textColor: Colors.white,
+        fontSize: 18.0,
+      );
+    } catch (e) {
+      debugPrint("Error adding friend: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: const Text(
+          "Friend Suggestions",
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+      ),
+      body: Container(
+        child: Center(
+          child: isLoading
+              ? const CircularProgressIndicator()
+              : ListView.builder(
+                  itemBuilder: (context, index) {
+                    final user = usersList![index];
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 15,
+                        horizontal: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.symmetric(
+                          horizontal: BorderSide(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(100),
+                            ),
+                            child: FadeInImage.assetNetwork(
+                              width: 70,
+                              height: 70,
+                              placeholder: "lib/assets/loading.png",
+                              image:
+                                  user['avatar'] ??
+                                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRH87TKQrWcl19xly2VNs0CjBzy8eaKNM-ZpA&s",
+                            ),
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.only(left: 30),
+                            child: Text(
+                              user['username'].toUpperCase() ?? "...",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+
+                          Spacer(),
+                          GestureDetector(
+                            onTap: addFriendLoading
+                                ? null
+                                : () {
+                                    handleAddFriend(user['_id']);
+                                  },
+                            child: Container(
+                              margin: EdgeInsets.only(left: 20),
+                              padding: EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                spacing: 5,
+                                children: [
+                                  Text(
+                                    "Add",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Icon(
+                                    size: 18,
+                                    Icons.person_add_alt,
+                                    color: Colors.white,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  itemCount: usersList?.length ?? 0,
+                ),
+        ),
+      ),
+    );
+  }
+}
