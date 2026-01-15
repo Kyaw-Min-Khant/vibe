@@ -22,9 +22,14 @@ class _RoomScreenState extends State<RoomScreen> {
   @override
   void initState() {
     super.initState();
-    SocketService().socket.on("receiveDirectMessage", (data) {
+    SocketService().socket.on("newDirectMessage", (data) {
+      if (!mounted) return;
+
       setState(() {
-        messages.add({"message": data["message"], "isMe": false});
+        messages.add({
+          "message": data["message"] ?? data["content"],
+          "isMe": false,
+        });
       });
     });
   }
