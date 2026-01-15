@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:messaging_app/services/socket_service.dart';
 import 'package:messaging_app/services/user_service.dart';
 
 class MessageListScreen extends StatefulWidget {
@@ -10,6 +11,8 @@ class MessageListScreen extends StatefulWidget {
 
 class _MessageListScreenState extends State<MessageListScreen> {
   List<Map<String, dynamic>> friendsList = [];
+  Map<String, dynamic>? authResponse;
+
   bool isLoading = true;
   void fetchFriendList() async {
     try {
@@ -26,8 +29,15 @@ class _MessageListScreenState extends State<MessageListScreen> {
 
   @override
   void initState() {
-    fetchFriendList();
     super.initState();
+    SocketService().connect();
+    SocketService().socket.on('authenticated', (data) {
+      debugPrint("Authenticated event received: $data");
+      setState(() {
+        authResponse = Map<String, dynamic>.from(data);
+      });
+    });
+    fetchFriendList();
   }
 
   @override
@@ -49,46 +59,58 @@ class _MessageListScreenState extends State<MessageListScreen> {
               : ListView.builder(
                   itemBuilder: (context, index) {
                     final user = friendsList![index];
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 15,
-                        horizontal: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.symmetric(
-                          horizontal: BorderSide(
-                            color: Colors.grey.shade300,
-                            width: 1,
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/room',
+                          arguments: {
+                            "friendId": user['_id'],
+                            "friendUsername": user['username'],
+                          },
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 15,
+                          horizontal: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
                           ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(100),
-                            ),
-                            child: FadeInImage.assetNetwork(
-                              width: 70,
-                              height: 70,
-                              placeholder: "lib/assets/loading.png",
-                              image:
-                                  user['avatar'] ??
-                                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRH87TKQrWcl19xly2VNs0CjBzy8eaKNM-ZpA&s",
-                            ),
-                          ),
-
-                          Padding(
-                            padding: const EdgeInsets.only(left: 30),
-                            child: Text(
-                              user['username'].toUpperCase() ?? "...",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(100),
+                              ),
+                              child: FadeInImage.assetNetwork(
+                                width: 70,
+                                height: 70,
+                                placeholder: "lib/assets/loading.png",
+                                image:
+                                    user['avatar'] ??
+                                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRH87TKQrWcl19xly2VNs0CjBzy8eaKNM-ZpA&s",
                               ),
                             ),
-                          ),
-                        ],
+
+                            Padding(
+                              padding: const EdgeInsets.only(left: 30),
+                              child: Text(
+                                user['username'].toUpperCase() ?? "...",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },

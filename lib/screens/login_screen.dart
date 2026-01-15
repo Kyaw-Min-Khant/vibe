@@ -3,9 +3,11 @@ import 'package:messaging_app/components/login_input.dart';
 import 'package:messaging_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<void> saveToken(String token) async {
+Future<void> saveToken(String token, String userId, String userName) async {
   final pref = await SharedPreferences.getInstance();
   await pref.setString("token", token);
+  await pref.setString('user_id', userId);
+  await pref.setString('user_name', userName);
   debugPrint("Token saved: $token");
 }
 
@@ -110,7 +112,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         if (response.success) {
                           debugPrint(response.data!.user.id);
-                          saveToken(response.data!.token);
+                          saveToken(
+                            response.data!.token,
+                            response.data!.user.id,
+                            response.data!.user.username,
+                          );
                           Navigator.pushReplacementNamed(context, '/home');
                         } else {
                           showDialog(

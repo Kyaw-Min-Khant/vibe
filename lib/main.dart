@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:messaging_app/routes/custom_bottomnavigation.dart';
 import 'package:messaging_app/screens/login_screen.dart';
+import 'package:messaging_app/screens/room_screen.dart';
 import 'package:messaging_app/screens/signup_screen.dart';
+import 'package:messaging_app/services/socket_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('token');
+  await SocketService().init();
   runApp(MyApp(isLoggedIn: token != null));
 }
 
@@ -29,6 +32,15 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/home': (context) => const CustomBottomNavigation(),
+        '/room': (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
+          return RoomScreen(
+            friendId: args['friendId'],
+            friendUsername: args['friendUsername'],
+          );
+        },
       },
       // home: LoginScreen(),
     );
