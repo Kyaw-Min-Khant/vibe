@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:messaging_app/components/login_input.dart';
 import 'package:messaging_app/services/auth_service.dart';
+import 'package:messaging_app/services/firebase_messaging_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> saveToken(String token, String userId, String userName) async {
@@ -8,7 +9,6 @@ Future<void> saveToken(String token, String userId, String userName) async {
   await pref.setString("token", token);
   await pref.setString('user_id', userId);
   await pref.setString('user_name', userName);
-  debugPrint("Token saved: $token");
 }
 
 class LoginScreen extends StatefulWidget {
@@ -104,11 +104,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       onPressed: () async {
+                        final fcmToken = await FirebaseMessagingService.instance
+                            .getFcmToken();
+                        debugPrint("FCM Token:");
+                        debugPrint(fcmToken);
+                        if (fcmToken == null) {
+                          debugPrint("FCM Token is null");
+                          return;
+                        }
                         final response = await LoginService().login(
                           emailController.text,
                           passwordController.text,
+                          fcmToken,
                         );
-                        debugPrint(response.toString());
 
                         if (response.success) {
                           debugPrint(response.data!.user.id);

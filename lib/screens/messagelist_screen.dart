@@ -1,21 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:messaging_app/providers/user_provider.dart';
 import 'package:messaging_app/services/socket_service.dart';
 import 'package:messaging_app/services/user_service.dart';
+import 'package:provider/provider.dart';
+
 
 class MessageListScreen extends StatefulWidget {
   const MessageListScreen({super.key});
-
   @override
   State<MessageListScreen> createState() => _MessageListScreenState();
 }
 
 class _MessageListScreenState extends State<MessageListScreen> {
   List<Map<String, dynamic>> friendsList = [];
-  Map<String, dynamic>? authResponse;
-
+  late UserProvider userProvider;
   bool isLoading = true;
   void fetchFriendList() async {
     try {
+      final userProfile = await UserService().getUserDetail();
+      if (userProfile != null) {
+        debugPrint("Setting up socket listener for authenticated event");
+        SocketService().socket.on('authenticated', (data) {
+          debugPrint("Authenticated event received: $data");
+        });
+        userProvider.setUserData(userProfile);
+        debugPrint("User data set in UserProvider: ${userProvider.userData}");
+      }
       final friendList = await UserService().getFriends();
       setState(() {
         friendsList = List<Map<String, dynamic>>.from(friendList);
@@ -31,13 +41,14 @@ class _MessageListScreenState extends State<MessageListScreen> {
   void initState() {
     super.initState();
     SocketService().connect();
-    SocketService().socket.on('authenticated', (data) {
-      debugPrint("Authenticated event received: $data");
-      setState(() {
-        authResponse = Map<String, dynamic>.from(data);
-      });
-    });
+    userProvider = context.read<UserProvider>();
     fetchFriendList();
+  }
+
+  @override
+  void dispose() {
+    SocketService().socket.off('authenticated');
+    super.dispose();
   }
 
   @override
@@ -58,7 +69,7 @@ class _MessageListScreenState extends State<MessageListScreen> {
               ? const CircularProgressIndicator()
               : ListView.builder(
                   itemBuilder: (context, index) {
-                    final user = friendsList![index];
+                    final user = friendsList[index];
                     return GestureDetector(
                       onTap: () {
                         Navigator.pushNamed(
@@ -67,6 +78,9 @@ class _MessageListScreenState extends State<MessageListScreen> {
                           arguments: {
                             "friendId": user['_id'],
                             "friendUsername": user['username'],
+                            'friendAvatar': user['avatar'],
+                            'activeStatus': user['isOnline'],
+                            'lastSeen': user['lastSeen'],
                           },
                         );
                       },
@@ -85,17 +99,28 @@ class _MessageListScreenState extends State<MessageListScreen> {
                         ),
                         child: Row(
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(100),
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  width: 3,
+                                  color: user['isOnline']
+                                      ? Colors.blue
+                                      : Colors.grey,
+                                ),
                               ),
-                              child: FadeInImage.assetNetwork(
-                                width: 70,
-                                height: 70,
-                                placeholder: "lib/assets/loading.png",
-                                image:
-                                    user['avatar'] ??
-                                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRH87TKQrWcl19xly2VNs0CjBzy8eaKNM-ZpA&s",
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(100),
+                                ),
+                                child: FadeInImage.assetNetwork(
+                                  width: 70,
+                                  height: 70,
+                                  placeholder: "lib/assets/loading.png",
+                                  image:
+                                      user['avatar'] ??
+                                      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRH87TKQrWcl19xly2VNs0CjBzy8eaKNM-ZpA&s",
+                                ),
                               ),
                             ),
 
@@ -114,7 +139,7 @@ class _MessageListScreenState extends State<MessageListScreen> {
                       ),
                     );
                   },
-                  itemCount: friendsList?.length ?? 0,
+                  itemCount: friendsList.length ?? 0,
                 ),
         ),
       ),

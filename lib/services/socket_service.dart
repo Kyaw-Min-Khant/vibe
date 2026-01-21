@@ -19,8 +19,6 @@ class SocketService {
   late IO.Socket socket;
   SocketService._internal();
   void connect() {
-    debugPrint(userId);
-    debugPrint("user id");
     socket = IO.io(
       Api.baseUrl,
       IO.OptionBuilder()
@@ -54,6 +52,10 @@ class SocketService {
       "message": message,
       "userId": userId,
     });
+  }
+
+  void isUserTyping({required String recipientId, required bool isTyping}) {
+    socket.emit("typing", {"recipientId": recipientId, "isTyping": isTyping});
   }
 
   void disconnect() {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:messaging_app/providers/user_provider.dart';
 import 'package:messaging_app/services/auth_service.dart';
-import 'package:messaging_app/services/user_service.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -11,26 +12,10 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  Map<String, dynamic>? userData;
   bool logoutIsLoading = false;
-  bool isLoading = true;
   @override
   void initState() {
     super.initState();
-    fetchUserData();
-  }
-
-  void fetchUserData() async {
-    try {
-      final userData = await UserService().getUserDetail();
-      setState(() {
-        this.userData = userData;
-        isLoading = false;
-      });
-      debugPrint("User Data: $userData");
-    } catch (e) {
-      debugPrint("Error fetching user data: $e");
-    }
   }
 
   void handleLogout() async {
@@ -50,59 +35,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(userData.toString());
+    final userProvider = Provider.of<UserProvider>(context);
+    Map<String, dynamic>? user = userProvider.userData;
+    debugPrint(userProvider.userData.toString());
     return Scaffold(
       body: Center(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 50),
-          child: isLoading
-              ? const CircularProgressIndicator()
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  spacing: 10,
-                  children: [
-                    FadeInImage.assetNetwork(
-                      width: 200,
-                      image:
-                          userData!['avatar'] ??
-                          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRH87TKQrWcl19xly2VNs0CjBzy8eaKNM-ZpA&s",
-                      placeholder: 'lib/assets/loading.png',
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            spacing: 10,
+            children: [
+              FadeInImage.assetNetwork(
+                width: 200,
+                image:
+                    user['avatar'] ??
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRH87TKQrWcl19xly2VNs0CjBzy8eaKNM-ZpA&s",
+                placeholder: 'lib/assets/loading.png',
+              ),
+              Text(
+                "Name: ${user['username']}",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              Text(
+                "Email: ${user['email']}",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.red,
+                    textStyle: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
                     ),
-                    Text(
-                      "Name: ${userData!['username']}",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      "Email: ${userData!['email']}",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.red,
-                          textStyle: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: () {
-                          handleLogout();
-                        },
-                        child: Text("Logout"),
-                      ),
-                    ),
-                  ],
+                  ),
+                  onPressed: () {
+                    handleLogout();
+                  },
+                  child: Text("Logout"),
                 ),
+              ),
+            ],
+          ),
         ),
       ),
     );

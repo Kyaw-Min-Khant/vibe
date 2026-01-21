@@ -5,10 +5,21 @@ import 'package:messaging_app/models/loginresponse.dart';
 import 'package:messaging_app/services/api.dart';
 
 class LoginService {
-  Future<LoginResponse> login(String email, String password) async {
+  Future<LoginResponse> login(
+    String email,
+    String password,
+    String? fcmToken,
+  ) async {
+    debugPrint(
+      (jsonEncode({
+        "email": email,
+        "password": password,
+        "fcmToken": fcmToken,
+      })),
+    );
     final response = await http.post(
       Uri.parse('${Api.baseUrl}/v1/api/auth/login'),
-      body: {"email": email, "password": password},
+      body: {"email": email, "password": password, "fcmtoken": fcmToken},
     );
     final loginResponseJson = jsonDecode(response.body) as Map<String, dynamic>;
     return LoginResponse.fromJson(loginResponseJson);
