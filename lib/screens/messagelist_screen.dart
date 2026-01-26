@@ -4,7 +4,6 @@ import 'package:messaging_app/services/socket_service.dart';
 import 'package:messaging_app/services/user_service.dart';
 import 'package:provider/provider.dart';
 
-
 class MessageListScreen extends StatefulWidget {
   const MessageListScreen({super.key});
   @override

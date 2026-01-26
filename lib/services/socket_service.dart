@@ -6,6 +6,7 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 class SocketService {
   String? userId;
   String? userName;
+
   late SharedPreferences prefs;
 
   Future<void> init() async {
@@ -46,11 +47,16 @@ class SocketService {
     });
   }
 
-  void sendMessage({required String recipientId, required String message}) {
+  void sendMessage({
+    required String recipientId,
+    required String message,
+    String? messageType,
+  }) {
     socket.emit("sendDirectMessage", {
       "recipientId": recipientId,
       "message": message,
       "userId": userId,
+      "messageType": messageType,
     });
   }
 

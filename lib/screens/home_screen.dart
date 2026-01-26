@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:messaging_app/services/user_service.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+// import 'package:fluttertoast/fluttertoast.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,15 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void confirmFriendRequest(String requestId) async {
     try {
       final response = await UserService().acceptFriendRequest(requestId);
-      Fluttertoast.showToast(
-        msg: response['message'] ?? "Friend Request Accepted",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.blue,
-        textColor: Colors.white,
-        fontSize: 18.0,
-      );
+
       _fetchFriendRequestList();
     } catch (e) {
       debugPrint("Error confirming friend request: $e");
@@ -77,15 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
         usersList = List<Map<String, dynamic>>.from(usersListData);
         addFriendLoading = false;
       });
-      Fluttertoast.showToast(
-        msg: response['message'] ?? "Friend Request Sent",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.blue,
-        textColor: Colors.white,
-        fontSize: 18.0,
-      );
     } catch (e) {
       debugPrint("Error adding friend: $e");
     }
