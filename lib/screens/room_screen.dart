@@ -2,11 +2,13 @@ import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:messaging_app/components/custom_audio_player.dart';
+import 'package:messaging_app/components/custom_message_input.dart';
 import 'package:messaging_app/services/appwrite_service.dart';
 import 'package:messaging_app/services/audiorecorder_service.dart';
 import 'package:messaging_app/services/message_service.dart';
 import 'package:messaging_app/services/socket_service.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:messaging_app/utils/room_utils.dart';
 
 class RoomScreen extends StatefulWidget {
   final String friendId;
@@ -228,36 +230,6 @@ class _RoomScreenState extends State<RoomScreen> {
     }
   }
 
-  IconData _getStatusIcon(String status, dynamic seenAt) {
-    switch (status) {
-      case 'sent':
-        return Icons.check;
-      case 'delivered':
-        return Icons.done_all;
-      default:
-        return Icons.check;
-    }
-  }
-
-  Color _getStatusColor(String status, dynamic seenAt) {
-    if (seenAt != null) return Colors.blue; // seen = blue double tick
-    if (status == 'delivered') return Colors.white70; // delivered gray
-    return Colors.white; // sent
-  }
-
-  String _formatTime(dynamic dateTime) {
-    if (dateTime == null) return '';
-    final dt = DateTime.parse(dateTime).toLocal();
-    String period = dt.hour >= 12 ? "PM" : "AM";
-
-    // Convert 0-23 hour to 1-12 hour
-    final hour = dt.hour % 12;
-    final formattedHour = hour == 0 ? 12 : hour;
-    final formattedHourStr = formattedHour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$formattedHourStr:$min $period';
-  }
-
   @override
   void dispose() {
     SocketService().socket.off("newDirectMessage", _onNewMessage);
@@ -355,14 +327,31 @@ class _RoomScreenState extends State<RoomScreen> {
                       children: [
                         if (msg['messageType'] == 'image' &&
                             (msg['fileUrl'] ?? '').isNotEmpty)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: FadeInImage.assetNetwork(
-                              placeholder: 'lib/assets/loading.png',
-                              image: msg['fileUrl']!,
-                              width: 200,
-                              height: 200,
-                              fit: BoxFit.cover,
+                          GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: FadeInImage.assetNetwork(
+                                      placeholder: 'lib/assets/loading.png',
+                                      image: msg['fileUrl']!,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: FadeInImage.assetNetwork(
+                                placeholder: 'lib/assets/loading.png',
+                                image: msg['fileUrl']!,
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
 
@@ -373,19 +362,19 @@ class _RoomScreenState extends State<RoomScreen> {
                             child: Row(
                               children: [
                                 Icon(
-                                  _getStatusIcon(
+                                  RoomUtils.getStatusIcon(
                                     msg['status'] ?? 'sent',
                                     msg['seenAt'],
                                   ),
                                   size: 16,
-                                  color: _getStatusColor(
+                                  color: RoomUtils.getStatusColor(
                                     msg['status'],
                                     msg['seenAt'],
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _formatTime(msg['createdAt']),
+                                  RoomUtils.formatTime(msg['createdAt']),
                                   style: const TextStyle(
                                     fontSize: 10,
                                     color: Colors.white70,
@@ -414,19 +403,19 @@ class _RoomScreenState extends State<RoomScreen> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Icon(
-                                _getStatusIcon(
+                                RoomUtils.getStatusIcon(
                                   msg['status'] ?? 'sent',
                                   msg['seenAt'],
                                 ),
                                 size: 16,
-                                color: _getStatusColor(
+                                color: RoomUtils.getStatusColor(
                                   msg['status'] ?? 'sent',
                                   msg['seenAt'],
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                _formatTime(msg['createdAt']),
+                                RoomUtils.formatTime(msg['createdAt']),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isMe ? Colors.white70 : Colors.black54,
@@ -464,19 +453,19 @@ class _RoomScreenState extends State<RoomScreen> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Icon(
-                                _getStatusIcon(
+                                RoomUtils.getStatusIcon(
                                   msg['status'] ?? 'sent',
                                   msg['seenAt'],
                                 ),
                                 size: 16,
-                                color: _getStatusColor(
+                                color: RoomUtils.getStatusColor(
                                   msg['status'] ?? 'sent',
                                   msg['seenAt'],
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                _formatTime(msg['createdAt']),
+                                RoomUtils.formatTime(msg['createdAt']),
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: isMe ? Colors.white70 : Colors.black54,
@@ -530,73 +519,19 @@ class _RoomScreenState extends State<RoomScreen> {
   }
 
   Widget _buildInput() {
-    return SafeArea(
-      child: Container(
-        child: Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                IconButton(
-                  style: IconButton.styleFrom(
-                    foregroundColor: const Color.fromARGB(255, 6, 120, 214),
-                  ),
-                  icon: const Icon(Icons.camera_alt),
-                  onPressed: _openfilePickerAndUpload,
-                ),
-                IconButton(
-                  icon: Icon(_isRecording ? Icons.stop : Icons.mic),
-                  color: _isRecording
-                      ? Colors.red
-                      : const Color.fromARGB(255, 6, 120, 214),
-                  onPressed: () {
-                    if (_isRecording) {
-                      _stopRecording();
-                    } else {
-                      _startRecording();
-                    }
-                  },
-                ),
-                // if (selectedFile != null)
-                //   Expanded(
-                //     child: Padding(
-                //       padding: const EdgeInsets.only(bottom: 10),
-                //       child: Image.file(
-                //         selectedFile!,
-                //         width: 150,
-                //         height: 150,
-                //         fit: BoxFit.contain,
-                //       ),
-                //     ),
-                //   )
-                // else
-                Expanded(
-                  child: TextField(
-                    onChanged: (text) {
-                      SocketService().isUserTyping(
-                        recipientId: widget.friendId,
-                        isTyping: text.isNotEmpty,
-                      );
-                    },
-                    controller: _textController,
-                    decoration: const InputDecoration(
-                      hintText: "Type a message...",
-                      contentPadding: EdgeInsets.all(12),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _sendMessage,
-                  style: IconButton.styleFrom(
-                    foregroundColor: const Color.fromARGB(255, 6, 120, 214),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    return CustomMessageInput(
+      controller: _textController,
+      isRecording: _isRecording,
+      onSend: _sendMessage,
+      onOpenFilePicker: _openfilePickerAndUpload,
+      onStartRecording: _startRecording,
+      onStopRecording: _stopRecording,
+      onTyping: (text) {
+        SocketService().isUserTyping(
+          recipientId: widget.friendId,
+          isTyping: text.isNotEmpty,
+        );
+      },
     );
   }
 }
