@@ -17,13 +17,19 @@ class _MessageListScreenState extends State<MessageListScreen> {
   void fetchFriendList() async {
     try {
       final userProfile = await UserService().getUserDetail();
+      final friRequestList = await UserService().getFriendRequestList();
       if (userProfile != null) {
         debugPrint("Setting up socket listener for authenticated event");
         SocketService().socket.on('authenticated', (data) {
           debugPrint("Authenticated event received: $data");
         });
+
+        if (friRequestList.length != 0) {
+          userProvider.setFriRequestList(
+            List<Map<String, dynamic>>.from(friRequestList),
+          );
+        }
         userProvider.setUserData(userProfile);
-        debugPrint("User data set in UserProvider: ${userProvider.userData}");
       }
       final friendList = await UserService().getFriends();
       setState(() {

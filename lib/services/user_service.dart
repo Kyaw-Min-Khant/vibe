@@ -42,6 +42,7 @@ class UserService {
     );
     if (response.statusCode == 201) {
       final responseJson = jsonDecode(response.body);
+
       return responseJson;
     } else {
       throw Exception('Failed to add friend');

@@ -20,11 +20,55 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool isLoading = false;
   @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  void _handleLogin() async {
+    setState(() => isLoading = true);
+    final fcmToken = await FirebaseMessagingService.instance.getFcmToken();
+    if (fcmToken == null) {
+      debugPrint("FCM Token is null");
+      setState(() => isLoading = false);
+      return;
+    }
+
+    final response = await LoginService().login(
+      emailController.text,
+      passwordController.text,
+      fcmToken,
+    );
+
+    if (response.success) {
+      setState(() => isLoading = false);
+      saveToken(
+        response.data!.token,
+        response.data!.user.id,
+        response.data!.user.username,
+      );
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      setState(() => isLoading = false);
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Login Failed"),
+            content: Text(response.message ?? "Something went wrong"),
+            actions: [
+              TextButton(
+                child: const Text("OK"),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override
@@ -104,50 +148,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       onPressed: () async {
-                        final fcmToken = await FirebaseMessagingService.instance
-                            .getFcmToken();
-                        debugPrint("FCM Token:");
-                        debugPrint(fcmToken);
-                        if (fcmToken == null) {
-                          debugPrint("FCM Token is null");
-                          return;
-                        }
-                        final response = await LoginService().login(
-                          emailController.text,
-                          passwordController.text,
-                          fcmToken,
-                        );
-
-                        if (response.success) {
-                          debugPrint(response.data!.user.id);
-                          saveToken(
-                            response.data!.token,
-                            response.data!.user.id,
-                            response.data!.user.username,
-                          );
-                          Navigator.pushReplacementNamed(context, '/home');
-                        } else {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text("Login Failed"),
-                                content: Text(
-                                  response.message ?? "Something went wrong",
-                                ),
-                                actions: [
-                                  TextButton(
-                                    child: const Text("OK"),
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        }
+                        _handleLogin();
                       },
 
-                      child: Text("Login"),
+                      child: isLoading
+                          ? CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            )
+                          : Text("Login"),
                     ),
                   ),
                 ],
