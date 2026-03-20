@@ -1,5 +1,4 @@
 # Vibe
-[![Ask DeepWiki](https://devin.ai/assets/askdeepwiki.png)](https://deepwiki.com/Kyaw-Min-Khant/vibe)
 
 Vibe is a cross-platform real-time messaging application built with Flutter. It provides core chat functionalities including text, image, and audio messaging, user authentication, and friend management, all powered by a custom backend, Socket.IO, Firebase, and Appwrite.
 
